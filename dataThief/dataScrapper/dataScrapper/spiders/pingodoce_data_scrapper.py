@@ -3,6 +3,7 @@
 import scrapy
 import json
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from datetime import datetime
 
 SZ = 200
 
@@ -48,40 +49,33 @@ class PingoDoceDataExtractor(scrapy.Spider):
     ]
 
     def parse(self, response):
-        # 1. Select the product tiles
         products = response.xpath("//div[contains(@class, 'product-tile-pd')]")
-        
-        # If no products are found, the page is "blank" or empty, stop recursion
-        if not products:
-            self.logger.info(f"Reached the end of results at: {response.url}")
-            return
+        if not products: return
 
         for product in products:
-            # 2. Extract the hidden JSON in data-gtm-info
             gtm_raw = product.xpath("./@data-gtm-info").get()
-            
+            image_url = product.xpath(".//img[contains(@class, 'product-tile-component-image')]/@src").get()
+
             if gtm_raw:
                 try:
                     gtm_data = json.loads(gtm_raw)
-                    # The actual product data is inside the 'items' list
                     if gtm_data.get('items'):
-                        item = gtm_data['items'][0]
+                        raw = gtm_data['items'][0]
                         
-                        # 3. Enrich with extra HTML info
-                        # Extract the unit/quantity (e.g., "0.15 Kg")
-                        unit = product.xpath(".//div[contains(@class, 'product-unit')]/text()").get()
-                        item['unit_info'] = unit.strip() if unit else ""
-                        
-                        # Extract the display price (e.g., "1,89 €/Kg")
-                        display_price = product.xpath(".//span[contains(@class, 'sales')]//text()").getall()
-                        item['display_price'] = " ".join([t.strip() for t in display_price if t.strip()]).strip()
-                        
-                        # Extract product URL
-                        rel_url = product.xpath(".//a[contains(@class, 'product-tile-image-link')]/@href").get()
-                        item['url'] = response.urljoin(rel_url) if rel_url else ""
-                        
+                        # Standardized Object
+                        item = {
+                            "retailer": "Pingo Doce",
+                            "id": raw.get('item_id'),
+                            "product_name": raw.get('item_name'),
+                            "price": float(raw.get('price', 0)),
+                            "url": response.urljoin(product.xpath(".//a[contains(@class, 'product-tile-image-link')]/@href").get()),
+                            "image_url": image_url, # Extracted from HTML
+                            "qty": product.xpath("normalize-space(.//div[contains(@class, 'product-unit')]/text())").get(),
+                            "display_price": " ".join(product.xpath(".//span[contains(@class, 'sales')]//text()").getall()).strip(),
+                            "scraped_at": datetime.now().isoformat()
+                        }
                         yield item
-                except json.JSONDecodeError:
+                except:
                     continue
 
         # --- Pagination Logic ---

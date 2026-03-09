@@ -3,6 +3,7 @@
 import scrapy
 import json
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
+from datetime import datetime
 
 SZ = 200
 
@@ -42,60 +43,30 @@ class AuchanDataExtractor(scrapy.Spider):
 
     def parse(self, response):
         products = response.xpath("//div[contains(@class, 'auc-product-tile')]")
-        
-        if not products:
-            self.logger.info("No more products found.")
-            return
+        if not products: return
 
         for product in products:
             gtm_raw = product.xpath("./@data-gtm").get()
             if gtm_raw:
                 try:
-                    # 1. Base Info from GTM JSON
-                    item = json.loads(gtm_raw)
-                    item['retailer'] = "Auchan"
+                    raw = json.loads(gtm_raw)
+                    image_raw = product.xpath(".//picture/source[1]/@data-srcset").get() or product.xpath(".//img/@data-src").get()
                     
-                    # --- PRICE CONVERSION ---
-                    # Convert "price" string to float if it exists
-                    if 'price' in item and item['price']:
-                        try:
-                            item['price'] = float(item['price'])
-                        except ValueError:
-                            item['price'] = None # Or keep as string if preferred
-                    
-                    # 2. Enhanced Quantity Extraction
-                    item['qty_min'] = product.xpath("normalize-space(.//span[@class='auc-measures--avg-weight']/text())").get()
-                    
-                    # 3. Price per unit extraction & conversion
-                    ppu_raw = product.xpath("normalize-space(.//span[@class='auc-measures--price-per-unit']/text())").get()
-                    item['price_per_unit_label'] = ppu_raw # The full string "0.48 €/un"
-                    
-                    # Optional: Extract just the number from "0.48 €/un"
-                    if ppu_raw:
-                        try:
-                            # Grabs the first part before the space and replaces comma with dot
-                            ppu_num = ppu_raw.split(' ')[0].replace(',', '.')
-                            item['price_per_unit'] = float(ppu_num)
-                        except (ValueError, IndexError):
-                            item['price_per_unit'] = None
-
-                    # 4. Pricing & Promotions
-                    item['is_promo'] = product.xpath(".//div[contains(@class, 'auc-price__promotion')]").get() is not None
-                    
-                    # 5. URLs & Images
-                    rel_url = product.xpath(".//a[contains(@class, 'link')]/@href").get()
-                    item['url'] = response.urljoin(rel_url) if rel_url else ""
-                    
-                    image_url = product.xpath(".//picture/source[1]/@data-srcset").get()
-                    if not image_url:
-                        image_url = product.xpath(".//img/@data-src").get()
-                    item['image_url'] = image_url.split('?')[0] if image_url else ""
-
-                    # 6. Labels
-                    item['labels'] = product.xpath(".//img[@class='auc-product-labels__icon']/@alt").getall()
-
+                    # Standardized Object
+                    item = {
+                        "retailer": "Auchan",
+                        "id": raw.get('id'),
+                        "product_name": raw.get('name'),
+                        "price": float(raw.get('price', 0)) if raw.get('price') else 0.0,
+                        "url": response.urljoin(product.xpath(".//a[contains(@class, 'link')]/@href").get()),
+                        "image_url": image_raw.split('?')[0] if image_raw else "",
+                        "qty": product.xpath("normalize-space(.//span[@class='auc-measures--avg-weight']/text())").get(),
+                        "price_per_unit": product.xpath("normalize-space(.//span[@class='auc-measures--price-per-unit']/text())").get(),
+                        "is_promo": product.xpath(".//div[contains(@class, 'auc-price__promotion')]").get() is not None,
+                        "scraped_at": datetime.now().isoformat()
+                    }
                     yield item
-                except json.JSONDecodeError:
+                except:
                     continue
 
         # --- Pagination Logic ---

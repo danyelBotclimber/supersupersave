@@ -1,0 +1,101 @@
+// ==UserScript==
+// @name         Intermarche Auto-Dumper + Auto-Loader
+// @namespace    http://tampermonkey.net/
+// @version      3.0
+// @description  Expands all products via "Ver mais" before saving HTML
+// @match        https://www.intermarche.pt/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    const targetUrls = [
+        "https://www.intermarche.pt/shelves/talho-e-peixaria/talho/porco/11539",
+        "https://www.intermarche.pt/shelves/frutas-e-legumes/legumes/batatas/11522",
+        "https://www.intermarche.pt/shelves/frutas-e-legumes/legumes/cogumelos/11529"
+    ];
+
+    let currentIndex = parseInt(sessionStorage.getItem('scraping_index')) || 0;
+    let isScraping = sessionStorage.getItem('is_scraping') === 'true';
+
+    // UI Setup
+    let container = document.createElement("div");
+    container.style = "position:fixed;top:10px;right:10px;z-index:9999;padding:15px;background:white;border:2px solid #007bff;border-radius:8px;box-shadow:0 4px 10px rgba(0,0,0,0.3); font-family: sans-serif;";
+    container.innerHTML = `
+        <h4 style="margin:0 0 10px 0; color:#333;">📦 Auto-Loader</h4>
+        <p id="scrape-status" style="margin:0; font-size:12px; color:#555;">Ready.</p>
+        <button id="start-btn" style="margin-top:10px; padding:6px 12px; background:#28a745; color:white; border:none; border-radius:4px; cursor:pointer;">START</button>
+        <button id="stop-btn" style="margin-top:10px; margin-left:5px; padding:6px 12px; background:#dc3545; color:white; border:none; border-radius:4px; cursor:pointer;">STOP</button>
+    `;
+    document.body.appendChild(container);
+
+    const updateStatus = (msg) => document.getElementById('scrape-status').innerText = msg;
+
+    document.getElementById('start-btn').onclick = () => {
+        sessionStorage.setItem('is_scraping', 'true');
+        sessionStorage.setItem('scraping_index', '0');
+        window.location.href = targetUrls[0];
+    };
+
+    document.getElementById('stop-btn').onclick = () => {
+        sessionStorage.setItem('is_scraping', 'false');
+        updateStatus("Stopped.");
+    };
+
+    async function expandAndSave() {
+        updateStatus(`Expanding products for page ${currentIndex + 1}...`);
+
+        // --- THE CLICKER LOOP ---
+        let moreButton;
+        do {
+            // Locate the "Ver mais produtos" button
+            moreButton = document.querySelector(".productList__next a.link--button");
+
+            if (moreButton) {
+                updateStatus("Found 'Ver Mais'. Clicking...");
+                moreButton.click();
+
+                // Wait for new items to render (adjust time if your internet is slow)
+                await new Promise(resolve => setTimeout(resolve, 3000));
+
+                // Scroll to bottom to trigger any lazy-loading logic the site might have
+                window.scrollTo(0, document.body.scrollHeight);
+            }
+        } while (moreButton);
+
+        updateStatus("All products loaded. Saving...");
+
+        // --- DOWNLOAD STEP ---
+        let blob = new Blob([document.documentElement.outerHTML], {type: "text/html"});
+        let a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        let fileName = targetUrls[currentIndex].split('/').slice(-2).join('_') + "_full.html";
+        a.download = fileName;
+        a.click();
+
+        // --- NAVIGATION STEP ---
+        if (currentIndex + 1 < targetUrls.length) {
+            sessionStorage.setItem('scraping_index', currentIndex + 1);
+            setTimeout(() => {
+                window.location.href = targetUrls[currentIndex + 1];
+            }, 2000);
+        } else {
+            sessionStorage.setItem('is_scraping', 'false');
+            updateStatus("✅ Complete!");
+            alert("All categories downloaded successfully!");
+        }
+    }
+
+    // Execution Logic
+    if (isScraping) {
+        // Initial wait to let DataDome check pass or products to appear
+        setTimeout(() => {
+            if (document.querySelectorAll("div[class*='product']").length > 0) {
+                expandAndSave();
+            } else {
+                updateStatus("Waiting for content... Please solve Captcha if visible.");
+            }
+        }, 5000);
+    }
+})();

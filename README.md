@@ -34,7 +34,11 @@ Data source:
 - [] lidl: api | https://www.lidl.pt/q/api/search?assortment=PT&locale=pt_PT&version=v2.0.0
 - [x] continente | webscrap (https://github.com/botclimber/groceryListGenerator)
 - [x] pingo doce | webscrap
-- [] intermarche | webscrap
+- [x] intermarche | tampermonkey script to download html + local html webscrapper to extract data (here they use DataDome security so by doing this we bypass them with style)
 - [] mini preco
 - [x] auchan
 - [] mercadona (no online store in Portugal)
+
+TODO:
+- complete intermarche list
+- check all data from all sources
