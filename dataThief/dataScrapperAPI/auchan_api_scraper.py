@@ -1,14 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 # Constants
 PAGE_SIZE = 200 # Auchan handles larger page sizes well
 BASE = "https://www.auchan.pt"
 RETAILER = "Auchan"
-SCRAPED_AT = datetime.utcnow().isoformat()
+SCRAPED_AT = datetime.now(timezone.utc).isoformat()
 
 urls = [
         f"https://www.auchan.pt/on/demandware.store/Sites-AuchanPT-Site/pt_PT/Search-UpdateGrid?cgid=produtos-frescos&prefn1=soldInStores&prefv1=000&srule=price-low-to-high&start=0&sz={PAGE_SIZE}",
@@ -134,7 +134,7 @@ for url in urls:
 print(f"\n✅ Extraction Complete. Total products collected: {len(all_products)}")
 
 # Save to file
-filename = "../../data/auchan/products.json"
+filename = "data/auchan/products.json"
 with open(filename, "w", encoding="utf-8") as f:
     json.dump(all_products, f, ensure_ascii=False, indent=2)
 

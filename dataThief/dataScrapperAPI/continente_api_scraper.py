@@ -1,27 +1,27 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 PAGE_SIZE = 35
 
 BASE = "https://www.continente.pt"
 RETAILER = "Continente"
-SCRAPED_AT = datetime.utcnow().isoformat()
+SCRAPED_AT = datetime.now(timezone.utc).isoformat()
 
 urls = [
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=frescos&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=laticinios&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=congelados&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=mercearias&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=bebidas&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=biologicos&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=limpeza&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=bebe-ver-todos&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=higiene-beleza&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=animais&pmin=0%2e01&start=0&sz={SZ}",
-        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=papelaria-material&pmin=0%2e01&start=0&sz={SZ}"
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=frescos&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=laticinios&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=congelados&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=mercearias&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=bebidas&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=biologicos&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=limpeza&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=bebe-ver-todos&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=higiene-beleza&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=animais&pmin=0%2e01&start=0&sz={PAGE_SIZE}",
+        f"https://www.continente.pt/on/demandware.store/Sites-continente-Site/default/Search-UpdateGrid?cgid=papelaria-material&pmin=0%2e01&start=0&sz={PAGE_SIZE}"
 ]
 
 headers = {
@@ -120,7 +120,7 @@ for url in urls:
 
 print(f"\nTotal products collected: {len(all_products)}")
 
-with open("../../data/continente/products.json", "w", encoding="utf-8") as f:
+with open("data/continente/products.json", "w", encoding="utf-8") as f:
     json.dump(all_products, f, ensure_ascii=False, indent=2)
 
 print("Saved products to products.json ✅")

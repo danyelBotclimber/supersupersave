@@ -1,6 +1,6 @@
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import time
 
 URL = "https://www.intermarche.pt/api/service/produits/v4/pdvs/07348/products/byKeywordAndCategory"
@@ -440,7 +440,7 @@ for category in categories:
                 "origin": p.get("origine"),
                 "image_url": p.get("images")[0] if p.get("images") else None,
                 "product_url": f"https://www.intermarche.pt/product/{p.get('libelle').lower().replace(' ','-')}/{p.get('produitEan13')}",
-                "scraped_at": datetime.utcnow().isoformat()
+                "scraped_at": datetime.now(timezone.utc).isoformat()
             }
 
             products_out.append(product)
@@ -450,7 +450,7 @@ for category in categories:
 
 print(f"Collected {len(products_out)} products")
 
-with open("../../data/intermarche/products.json", "w", encoding="utf-8") as f:
+with open("data/intermarche/products.json", "w", encoding="utf-8") as f:
     json.dump(products_out, f, indent=2, ensure_ascii=False)
 
 print("Saved to products.json")

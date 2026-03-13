@@ -1,14 +1,14 @@
 import requests
 from bs4 import BeautifulSoup
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 import re
 
 # Constants
 PAGE_SIZE = 200
 BASE = "https://www.pingodoce.pt"
 RETAILER = "Pingo Doce"
-SCRAPED_AT = datetime.utcnow().isoformat()
+SCRAPED_AT = datetime.now(timezone.utc).isoformat()
 
 urls = [
         f"https://www.pingodoce.pt/on/demandware.store/Sites-pingo-doce-Site/default/Search-UpdateGrid?cgid=ec_frutasevegetais_100&pmin=0%2e04&start=0&sz={PAGE_SIZE}"
@@ -156,7 +156,7 @@ for url in urls:
 # Final Output
 print(f"\n✅ Done! Total products collected: {len(all_products)}")
 
-with open("../../data/pingodoce/products.json", "w", encoding="utf-8") as f:
+with open("data/pingodoce/products.json", "w", encoding="utf-8") as f:
     json.dump(all_products, f, ensure_ascii=False, indent=2)
 
 print("Saved to pingodoce_products.json")
